@@ -1,0 +1,31 @@
+name: Sync Notification
+
+on:
+  push:
+    paths:
+      - 'data/**'
+      - 'commands/**'
+      - 'hooks/**'
+      - 'scripts/**'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Generate change summary
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD | head -20)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "count=$(git diff --name-only HEAD~1 HEAD | wc -l | tr -d ' ')" >> $GITHUB_OUTPUT
+
+      - name: Log sync event
+        run: |
+          echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | ${{ github.actor }} | ${{ steps.changes.outputs.count }} files | ${{ github.event.head_commit.message }}" >> /tmp/sync.log
+          echo "Sync logged: ${{ steps.changes.outputs.count }} files changed"

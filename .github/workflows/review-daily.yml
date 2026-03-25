@@ -1,0 +1,35 @@
+name: Daily Stats Collection
+
+on:
+  schedule:
+    # 22:00 KST = 13:00 UTC
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collect-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        run: |
+          sudo apt-get install -y jq
+          echo "DATE=$(date -u +%Y-%m-%d)" >> $GITHUB_ENV
+          echo "TYPE=daily" >> $GITHUB_ENV
+
+      - name: Collect repo stats
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/aggregate-stats.sh daily
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/reviews/daily/
+          git diff --cached --quiet || git commit -m "stats: daily ${DATE}"
+          git push
