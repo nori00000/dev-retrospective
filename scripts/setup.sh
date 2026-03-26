@@ -23,7 +23,7 @@ if [ ! -d "$REPO_ROOT/commands" ]; then
 fi
 
 # 1. Ensure ~/.claude/commands/ is a real directory (not a symlink)
-echo "[1/6] Preparing commands directory..."
+echo "[1/7] Preparing commands directory..."
 if [ -L "$CLAUDE_DIR/commands" ]; then
   echo "  Converting directory symlink to real directory..."
   LINK_TARGET=$(readlink "$CLAUDE_DIR/commands")
@@ -49,7 +49,7 @@ elif [ ! -d "$CLAUDE_DIR/commands" ]; then
 fi
 
 # 2. Create file-level symlinks for retrospective commands
-echo "[2/6] Linking retrospective commands..."
+echo "[2/7] Linking retrospective commands..."
 RETRO_CMDS="session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult dev-radar dev-inbox dev-setup"
 for cmd in $RETRO_CMDS; do
   SRC="$REPO_ROOT/commands/${cmd}.md"
@@ -63,7 +63,7 @@ for cmd in $RETRO_CMDS; do
 done
 
 # 3. Ensure ~/.claude/hooks/ is a real directory and link hooks
-echo "[3/6] Linking hooks..."
+echo "[3/7] Linking hooks..."
 if [ -L "$CLAUDE_DIR/hooks" ]; then
   LINK_TARGET=$(readlink "$CLAUDE_DIR/hooks")
   rm "$CLAUDE_DIR/hooks"
@@ -86,7 +86,7 @@ elif [ ! -d "$CLAUDE_DIR/hooks" ]; then
   mkdir -p "$CLAUDE_DIR/hooks"
 fi
 
-for hook in session-backup.sh session-restore.sh; do
+for hook in session-backup.sh session-restore.sh cmds-pre-check.sh cmds-post-validate.sh; do
   SRC="$REPO_ROOT/hooks/$hook"
   DST="$CLAUDE_DIR/hooks/$hook"
   if [ -f "$SRC" ]; then
@@ -97,7 +97,7 @@ for hook in session-backup.sh session-restore.sh; do
 done
 
 # 4. Obsidian sessions symlink
-echo "[4/6] Obsidian compatibility..."
+echo "[4/7] Obsidian compatibility..."
 if [ -d "$VAULT_BASE" ]; then
   VAULT_SESSIONS_DIR="$VAULT_BASE/00. Inbox/03. AI Agent/sessions"
   if [ -d "$VAULT_SESSIONS_DIR" ] && [ ! -L "$VAULT_SESSIONS_DIR" ]; then
@@ -126,14 +126,34 @@ else
 fi
 
 # 5. Ensure required directories
-echo "[5/6] Creating required directories..."
+echo "[5/7] Creating required directories..."
 mkdir -p "$CLAUDE_DIR/logs"
 mkdir -p "$CLAUDE_DIR/session-backups"
 mkdir -p "$REPO_ROOT/data/sessions"
 mkdir -p "$REPO_ROOT/data/reviews"/{daily,weekly,monthly,consult,radar,inbox}
 
-# 6. Cron setup
-echo "[6/6] Cron setup..."
+# 6. Skills symlink
+echo "[6/7] Linking skills..."
+SKILLS_DIR="$CLAUDE_DIR/skills/omc-learned"
+mkdir -p "$SKILLS_DIR"
+for skill_dir in "$REPO_ROOT/skills"/*/; do
+  [ -d "$skill_dir" ] || continue
+  SKILL_NAME=$(basename "$skill_dir")
+  DST="$SKILLS_DIR/$SKILL_NAME"
+  if [ -L "$DST" ]; then
+    echo "  Already linked: $SKILL_NAME"
+  elif [ -d "$DST" ]; then
+    rm -rf "$DST"
+    ln -sf "$skill_dir" "$DST"
+    echo "  Replaced: $SKILL_NAME (dir -> symlink)"
+  else
+    ln -sf "$skill_dir" "$DST"
+    echo "  Linked: $SKILL_NAME"
+  fi
+done
+
+# 7. Cron setup
+echo "[7/7] Cron setup..."
 CRON_MARKER="# === dev-retrospective cron ==="
 EXISTING_CRON=$(crontab -l 2>/dev/null || true)
 
@@ -164,6 +184,8 @@ echo "Symlinks:"
 echo "  ~/.claude/commands/dev-*.md -> ~/.dev-retrospective/commands/"
 echo "  ~/.claude/commands/session-log.md -> ~/.dev-retrospective/commands/"
 echo "  ~/.claude/hooks/session-*.sh -> ~/.dev-retrospective/hooks/"
+echo "  ~/.claude/hooks/cmds-*.sh -> ~/.dev-retrospective/hooks/"
+echo "  ~/.claude/skills/omc-learned/* -> ~/.dev-retrospective/skills/"
 if [ -d "$VAULT_BASE" ]; then
   echo "  Obsidian sessions -> ~/.dev-retrospective/data/sessions/"
 fi
@@ -175,3 +197,4 @@ echo "  30 22 * * *  AI enrichment"
 echo ""
 echo "Commands: /session-log, /dev-daily, /dev-weekly, /dev-monthly"
 echo "          /dev-checkin, /dev-consult, /dev-radar, /dev-inbox, /dev-setup"
+echo "Skills: auto-checkin, auto-checkout, auto-retrospective"

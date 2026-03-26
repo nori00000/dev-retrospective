@@ -22,7 +22,7 @@ jobs:
 
       - name: Collect repo stats
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: bash scripts/aggregate-stats.sh monthly
 
       - name: Commit results

@@ -3,6 +3,7 @@
 # GH Actions가 생성한 raw stats를 Claude CLI로 분석
 
 set -euo pipefail
+export PATH="/usr/local/bin:$HOME/.npm-global/bin:$PATH"
 
 REPO_ROOT="$HOME/.dev-retrospective"
 LOG_DIR="$HOME/.claude/logs"
@@ -36,7 +37,7 @@ for RAW_FILE in data/reviews/*/*-stats-raw.md; do
   MODE=$(grep "^mode:" "$RAW_FILE" | awk '{print $2}' || echo "daily")
 
   # Claude CLI available?
-  CLAUDE_CMD=$(which claude 2>/dev/null || echo "$HOME/.claude/bin/claude")
+  CLAUDE_CMD=$(which claude 2>/dev/null || echo "/usr/local/bin/claude")
   if [ ! -x "$CLAUDE_CMD" ]; then
     echo "[SKIP] Claude CLI not found, skipping AI enrichment"
     continue
