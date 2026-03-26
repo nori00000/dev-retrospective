@@ -21,4 +21,24 @@ if [ -f "$LAST_SESSION" ]; then
     fi
 fi
 
+# === 다른 머신의 마지막 세션 정보 ===
+MACHINES_DIR="$HOME/.dev-retrospective/data/machines"
+if [ -d "$MACHINES_DIR" ] && [ -n "$CLAUDE_ENV_FILE" ]; then
+  CURRENT_MACHINE=$(hostname -s)
+  OTHER_SESSIONS=""
+  for mdir in "$MACHINES_DIR"/*/; do
+    mname=$(basename "$mdir")
+    [ "$mname" = "$CURRENT_MACHINE" ] && continue
+    mfile="$mdir/last_session.json"
+    [ -f "$mfile" ] || continue
+    read m_project m_time m_unpushed <<< $(python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(d.get('project','?'), d.get('timestamp','?'), d.get('unpushed_commits',0))
+" < "$mfile" 2>/dev/null)
+    OTHER_SESSIONS="${OTHER_SESSIONS}${mname}:${m_project}:${m_time}:${m_unpushed};"
+  done
+  echo "export OTHER_MACHINE_SESSIONS=\"$OTHER_SESSIONS\"" >> "$CLAUDE_ENV_FILE"
+fi
+
 exit 0
