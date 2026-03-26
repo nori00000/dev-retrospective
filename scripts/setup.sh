@@ -20,8 +20,16 @@ resolve_link() {
 REPO_ROOT="$HOME/.dev-retrospective"
 CLAUDE_DIR="$HOME/.claude"
 MACHINE=$(hostname -s)
-VAULT_BASE="$HOME/Documents/Obsidian-0.1"
-VAULT_SESSIONS="$VAULT_BASE/00. Inbox/03. AI Agent/sessions"
+
+# Dynamic vault detection
+source "$REPO_ROOT/scripts/vault-detect.sh"
+VAULT_BASE=$(find_vault)
+VAULT_SESSIONS_SUBDIR="00. Inbox/03. AI Agent/sessions"
+if [[ -n "$VAULT_BASE" ]]; then
+  VAULT_SESSIONS="$VAULT_BASE/$VAULT_SESSIONS_SUBDIR"
+else
+  VAULT_SESSIONS=""
+fi
 
 echo "=== dev-retrospective Setup ==="
 echo "Machine: $MACHINE"
@@ -36,7 +44,7 @@ if [ ! -d "$REPO_ROOT/commands" ]; then
 fi
 
 # 1. Ensure ~/.claude/commands/ is a real directory (not a symlink)
-echo "[1/7] Preparing commands directory..."
+echo "[1/8] Preparing commands directory..."
 if [ -L "$CLAUDE_DIR/commands" ]; then
   echo "  Converting directory symlink to real directory..."
   LINK_TARGET=$(resolve_link "$CLAUDE_DIR/commands")
@@ -62,7 +70,7 @@ elif [ ! -d "$CLAUDE_DIR/commands" ]; then
 fi
 
 # 2. Create file-level symlinks for retrospective commands
-echo "[2/7] Linking retrospective commands..."
+echo "[2/8] Linking retrospective commands..."
 RETRO_CMDS="session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult dev-radar dev-inbox dev-setup"
 for cmd in $RETRO_CMDS; do
   SRC="$REPO_ROOT/commands/${cmd}.md"
@@ -91,7 +99,7 @@ done
 echo "  $LINK_OK OK, $LINK_FAIL failed"
 
 # 3. Ensure ~/.claude/hooks/ is a real directory and link hooks
-echo "[3/7] Linking hooks..."
+echo "[3/8] Linking hooks..."
 if [ -L "$CLAUDE_DIR/hooks" ]; then
   LINK_TARGET=$(resolve_link "$CLAUDE_DIR/hooks")
   rm "$CLAUDE_DIR/hooks"
@@ -125,7 +133,7 @@ for hook in session-backup.sh session-restore.sh cmds-pre-check.sh cmds-post-val
 done
 
 # 4. Obsidian sessions symlink
-echo "[4/7] Obsidian compatibility..."
+echo "[4/8] Obsidian compatibility..."
 if [ -d "$VAULT_BASE" ]; then
   VAULT_SESSIONS_DIR="$VAULT_BASE/00. Inbox/03. AI Agent/sessions"
   if [ -d "$VAULT_SESSIONS_DIR" ] && [ ! -L "$VAULT_SESSIONS_DIR" ]; then
@@ -160,7 +168,7 @@ else
 fi
 
 # 5. Ensure required directories
-echo "[5/7] Creating required directories..."
+echo "[5/8] Creating required directories..."
 mkdir -p "$CLAUDE_DIR/logs"
 mkdir -p "$CLAUDE_DIR/session-backups"
 mkdir -p "$REPO_ROOT/data/sessions"
@@ -169,7 +177,7 @@ mkdir -p "$REPO_ROOT/data/machines"
 touch "$REPO_ROOT/data/machines/.gitkeep"
 
 # 6. Skills symlink
-echo "[6/7] Linking skills..."
+echo "[6/8] Linking skills..."
 SKILLS_DIR="$CLAUDE_DIR/skills/omc-learned"
 mkdir -p "$SKILLS_DIR"
 for skill_dir in "$REPO_ROOT/skills"/*/; do
@@ -189,27 +197,41 @@ for skill_dir in "$REPO_ROOT/skills"/*/; do
 done
 
 # 7. Cron setup
-echo "[7/7] Cron setup..."
+echo "[7/8] Cron setup..."
 CRON_MARKER="# === dev-retrospective cron ==="
 EXISTING_CRON=$(crontab -l 2>/dev/null || true)
 
-if echo "$EXISTING_CRON" | grep -q "\.dev-retrospective.*git pull"; then
+if echo "$EXISTING_CRON" | grep -q "$CRON_MARKER"; then
   echo "  Cron entries already exist, skipping"
 else
   # Remove old vault-based cron entries
   CLEANED_CRON=$(echo "$EXISTING_CRON" | grep -v "Dev Review Automation" | grep -v "dev-review-cron" | grep -v "cron-daily\|cron-weekly\|cron-monthly" || true)
 
+  # Calculate hostname-based stagger offsets
+  OFFSET=$(( $(hostname -s | cksum | cut -d' ' -f1) % 5 ))
+  VAULT_OFFSET=$(( (OFFSET + 5) % 60 ))
+
   NEW_CRON="$CLEANED_CRON
 $CRON_MARKER
 # Git 동기화 (30분마다)
-*/30 * * * * cd $HOME/.dev-retrospective && git pull --ff-only >> $HOME/.claude/logs/git-sync.log 2>&1
-# 세션 데이터 자동 커밋 (매시간)
-0 * * * * cd $HOME/.dev-retrospective && git add -A data/ && { git diff --cached --quiet || git commit -m \"auto: sync from \$(hostname -s)\" && git push; } >> $HOME/.claude/logs/git-push.log 2>&1
-# AI 보강 (매일 22:30)
-30 22 * * * bash $HOME/.dev-retrospective/scripts/sync-and-enrich.sh >> $HOME/.claude/logs/enrich.log 2>&1"
+*/30 * * * * cd $HOME/.dev-retrospective && git pull --rebase --quiet >> $HOME/.claude/logs/git-sync.log 2>&1
+# 세션 데이터 자동 커밋 (매시간, stagger: ${OFFSET}분)
+$OFFSET * * * * cd $HOME/.dev-retrospective && git pull --rebase --quiet && git add -A data/ && git diff --cached --quiet || (git commit -m \"auto: sync from \$(hostname -s)\" && git push || (sleep 10 && git pull --rebase && git push)) >> $HOME/.claude/logs/git-push.log 2>&1
+# AI 보강 (매일 22:30 + hostname stagger)
+30 22 * * * sleep \$(( \$(hostname -s | cksum | cut -d' ' -f1) % 300 )) && bash $HOME/.dev-retrospective/scripts/sync-and-enrich.sh >> $HOME/.claude/logs/enrich.log 2>&1
+# Vault 커맨드 동기화 (매시간, push 후 5분)
+$VAULT_OFFSET * * * * bash $HOME/.dev-retrospective/scripts/sync-to-vault.sh >> $HOME/.claude/logs/vault-sync.log 2>&1"
 
   echo "$NEW_CRON" | crontab -
   echo "  Cron entries installed"
+fi
+
+# 8. Vault command sync
+echo "[8/8] Vault command sync..."
+if [[ -n "$VAULT_BASE" ]]; then
+  bash "$REPO_ROOT/scripts/sync-to-vault.sh"
+else
+  echo "  Vault not found, skipping vault sync"
 fi
 
 # Done
@@ -227,9 +249,10 @@ if [ -d "$VAULT_BASE" ]; then
 fi
 echo ""
 echo "Cron:"
-echo "  */30 * * * * git pull (sync)"
-echo "  0 * * * *    git add+commit+push (session data)"
-echo "  30 22 * * *  AI enrichment"
+echo "  */30 * * * * git pull --rebase (sync)"
+echo "  $OFFSET * * * *    git add+commit+push (session data, staggered)"
+echo "  30 22 * * *  AI enrichment (with stagger)"
+echo "  $VAULT_OFFSET * * * *    Vault sync: repo/commands/ -> vault/commands/ (hourly)"
 echo ""
 echo "Commands: /session-log, /dev-daily, /dev-weekly, /dev-monthly"
 echo "          /dev-checkin, /dev-consult, /dev-radar, /dev-inbox, /dev-setup"

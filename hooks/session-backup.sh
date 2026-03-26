@@ -33,7 +33,22 @@ echo "{
 # --- Obsidian Session Skeleton ---
 # 안전망: AI 분석 로그가 없을 때 스켈레톤 노트 자동 생성
 
-VAULT_BASE="$HOME/Documents/Obsidian-0.1"
+# Dynamic vault detection
+# Windows: Claude Code runs .sh hooks via Git Bash.
+# Known issue: If WSL is installed, bash may resolve to WSL bash.
+# Fix: Set CLAUDE_CODE_GIT_BASH_PATH in settings.json
+# See: https://github.com/anthropics/claude-code/issues/23556
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
+if [[ -f "$SCRIPT_DIR/scripts/vault-detect.sh" ]]; then
+  source "$SCRIPT_DIR/scripts/vault-detect.sh"
+elif [[ -f "$HOME/.dev-retrospective/scripts/vault-detect.sh" ]]; then
+  source "$HOME/.dev-retrospective/scripts/vault-detect.sh"
+else
+  VAULT_BASE=""
+fi
+if [[ -z "${VAULT_BASE:-}" ]]; then
+  VAULT_BASE=$(find_vault 2>/dev/null || echo "")
+fi
 SESSIONS_DIR="$VAULT_BASE/00. Inbox/03. AI Agent/sessions"
 MACHINE=$(hostname -s)
 DATE_STAMP=$(date +%Y-%m-%d)

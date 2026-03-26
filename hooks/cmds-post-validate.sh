@@ -14,8 +14,21 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 # Claude 설정 파일 제외
 [[ "$FILE_PATH" == *"/.claude/"* ]] && exit 0
 
-# Obsidian Vault 경로
-VAULT="/Users/leesangmin/Documents/Obsidian-0.1"
+# Dynamic vault detection
+# Windows: Claude Code runs .sh hooks via Git Bash.
+# Known issue: If WSL is installed, bash may resolve to WSL bash.
+# Fix: Set CLAUDE_CODE_GIT_BASH_PATH in settings.json
+# See: https://github.com/anthropics/claude-code/issues/23556
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
+if [[ -f "$SCRIPT_DIR/scripts/vault-detect.sh" ]]; then
+  source "$SCRIPT_DIR/scripts/vault-detect.sh"
+elif [[ -f "$HOME/.dev-retrospective/scripts/vault-detect.sh" ]]; then
+  source "$HOME/.dev-retrospective/scripts/vault-detect.sh"
+else
+  exit 0
+fi
+VAULT=$(find_vault 2>/dev/null || echo "")
+[[ -z "$VAULT" ]] && exit 0
 
 # Vault 밖이면 무시
 [[ "$FILE_PATH" != "$VAULT"* ]] && exit 0

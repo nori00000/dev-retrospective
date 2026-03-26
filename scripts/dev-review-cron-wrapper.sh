@@ -1,3 +1,8 @@
 #!/bin/bash
-# Cron wrapper - 경로에 공백이 있어서 cron에서 직접 호출이 안 되므로 wrapper 사용
-exec "/Users/leesangmin/Documents/Obsidian-0.1/00. Inbox/03. AI Agent/scripts/dev-review-cron.sh" "$@"
+# DEPRECATED: This wrapper is no longer needed.
+# The repo's own dev-review-cron.sh is now the canonical version.
+# If you have a crontab entry pointing here, update it to:
+#   bash $HOME/.dev-retrospective/scripts/dev-review-cron.sh
+#
+# Legacy wrapper - forwards to repo's own script
+exec "$HOME/.dev-retrospective/scripts/dev-review-cron.sh" "$@"
