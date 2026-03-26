@@ -100,4 +100,45 @@ git_branch: ${GIT_BRANCH}
 HEREDOC
 fi
 
+# === unpushed work 경고 ===
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  BRANCH=$(git branch --show-current 2>/dev/null)
+
+  # 1. 커밋되지 않은 변경사항
+  DIRTY=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+  # 2. push 안 된 커밋 수
+  UNPUSHED=$(git log @{u}.. --oneline 2>/dev/null | wc -l | tr -d ' ')
+
+  # 3. upstream 없는 브랜치 (로컬만 존재)
+  HAS_UPSTREAM=$(git rev-parse --abbrev-ref @{u} 2>/dev/null)
+
+  if [ "$DIRTY" -gt 0 ] || [ "$UNPUSHED" -gt 0 ] || [ -z "$HAS_UPSTREAM" ]; then
+    echo ""
+    echo "⚠️  [dev-retrospective] 이 머신에 남은 작업:"
+    [ "$DIRTY" -gt 0 ] && echo "   - 커밋되지 않은 변경: ${DIRTY}개 파일"
+    [ "$UNPUSHED" -gt 0 ] && echo "   - push 안 된 커밋: ${UNPUSHED}개 (branch: $BRANCH)"
+    [ -z "$HAS_UPSTREAM" ] && echo "   - 로컬 전용 브랜치: $BRANCH (upstream 없음)"
+    echo ""
+  fi
+fi
+
+# === 머신별 상태를 repo에도 저장 (멀티머신 공유) ===
+MACHINE_DIR="$HOME/.dev-retrospective/data/machines/$MACHINE"
+mkdir -p "$MACHINE_DIR"
+
+cat > "$MACHINE_DIR/last_session.json" << EOMACHINE
+{
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "machine": "$MACHINE",
+  "reason": "$reason",
+  "cwd": "$(pwd)",
+  "project": "$(basename "$(pwd)")",
+  "git_branch": "$(git branch --show-current 2>/dev/null || echo "none")",
+  "unpushed_commits": ${UNPUSHED:-0},
+  "dirty_files": ${DIRTY:-0},
+  "has_upstream": $([ -n "$HAS_UPSTREAM" ] && echo "true" || echo "false")
+}
+EOMACHINE
+
 exit 0

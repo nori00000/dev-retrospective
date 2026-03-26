@@ -47,7 +47,24 @@ ls "$CONSULT_DIR"/*.md 2>/dev/null | sort -r | head -1
 
 합의된 개선 사항과 실행 항목 추출.
 
-#### 2.5 Tech Radar & Inbox 미검토 항목
+#### 2.5 멀티머신 현황 로드
+
+```bash
+MACHINES_DIR="$HOME/.dev-retrospective/data/machines"
+CURRENT_MACHINE=$(hostname -s)
+for mdir in "$MACHINES_DIR"/*/; do
+  mname=$(basename "$mdir")
+  mfile="$mdir/last_session.json"
+  [ -f "$mfile" ] && cat "$mfile"
+done
+```
+
+각 머신의 last_session.json을 읽어 다음을 표시:
+- 머신 이름, 마지막 작업 프로젝트, 시간
+- unpushed 커밋/dirty 파일 수
+- upstream 없는 브랜치 경고
+
+#### 2.6 Tech Radar & Inbox 미검토 항목
 
 ```bash
 RADAR_DIR="$HOME/Documents/Obsidian-0.1/00. Inbox/03. AI Agent/sessions/reviews/radar"
@@ -82,6 +99,11 @@ if [ -f "$GIT_ROOT/.claude/CLAUDE.md" ]; then cat "$GIT_ROOT/.claude/CLAUDE.md";
 - **프로젝트**: {project}
 - **브랜치**: {branch}
 - **마지막 세션**: {날짜} - {제목}
+
+### 머신 현황
+| 머신 | 마지막 작업 | 프로젝트 | 브랜치 | 미push | 경고 |
+|------|------------|----------|--------|--------|------|
+(각 머신의 last_session.json 데이터로 테이블 생성)
 
 ### 미완료 백로그 ({N}개)
 1. {TODO1}

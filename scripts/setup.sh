@@ -165,6 +165,8 @@ mkdir -p "$CLAUDE_DIR/logs"
 mkdir -p "$CLAUDE_DIR/session-backups"
 mkdir -p "$REPO_ROOT/data/sessions"
 mkdir -p "$REPO_ROOT/data/reviews"/{daily,weekly,monthly,consult,radar,inbox}
+mkdir -p "$REPO_ROOT/data/machines"
+touch "$REPO_ROOT/data/machines/.gitkeep"
 
 # 6. Skills symlink
 echo "[6/7] Linking skills..."
@@ -202,7 +204,7 @@ $CRON_MARKER
 # Git 동기화 (30분마다)
 */30 * * * * cd $HOME/.dev-retrospective && git pull --ff-only >> $HOME/.claude/logs/git-sync.log 2>&1
 # 세션 데이터 자동 커밋 (매시간)
-0 * * * * cd $HOME/.dev-retrospective && git add -A data/ && git diff --cached --quiet || (git commit -m \"auto: sync from \$(hostname -s)\" && git push) >> $HOME/.claude/logs/git-push.log 2>&1
+0 * * * * cd $HOME/.dev-retrospective && git add -A data/ && { git diff --cached --quiet || git commit -m \"auto: sync from \$(hostname -s)\" && git push; } >> $HOME/.claude/logs/git-push.log 2>&1
 # AI 보강 (매일 22:30)
 30 22 * * * bash $HOME/.dev-retrospective/scripts/sync-and-enrich.sh >> $HOME/.claude/logs/enrich.log 2>&1"
 
