@@ -4,6 +4,19 @@
 
 set -euo pipefail
 
+# Portable readlink (macOS readlink doesn't support -f)
+resolve_link() {
+  local target="$1"
+  cd "$(dirname "$target")" 2>/dev/null
+  target=$(basename "$target")
+  while [ -L "$target" ]; do
+    target=$(readlink "$target")
+    cd "$(dirname "$target")" 2>/dev/null
+    target=$(basename "$target")
+  done
+  echo "$(pwd -P)/$target"
+}
+
 REPO_ROOT="$HOME/.dev-retrospective"
 CLAUDE_DIR="$HOME/.claude"
 MACHINE=$(hostname -s)
@@ -26,7 +39,7 @@ fi
 echo "[1/7] Preparing commands directory..."
 if [ -L "$CLAUDE_DIR/commands" ]; then
   echo "  Converting directory symlink to real directory..."
-  LINK_TARGET=$(readlink "$CLAUDE_DIR/commands")
+  LINK_TARGET=$(resolve_link "$CLAUDE_DIR/commands")
   rm "$CLAUDE_DIR/commands"
   mkdir -p "$CLAUDE_DIR/commands"
   # Copy non-retrospective commands from old target
@@ -62,10 +75,25 @@ for cmd in $RETRO_CMDS; do
   fi
 done
 
+# Verify symlinks
+echo "  Verifying..."
+LINK_OK=0
+LINK_FAIL=0
+for cmd in $RETRO_CMDS; do
+  DST="$CLAUDE_DIR/commands/${cmd}.md"
+  if [ -L "$DST" ] && [ -f "$DST" ]; then
+    LINK_OK=$((LINK_OK + 1))
+  else
+    echo "  [WARN] Failed: ${cmd}.md"
+    LINK_FAIL=$((LINK_FAIL + 1))
+  fi
+done
+echo "  $LINK_OK OK, $LINK_FAIL failed"
+
 # 3. Ensure ~/.claude/hooks/ is a real directory and link hooks
 echo "[3/7] Linking hooks..."
 if [ -L "$CLAUDE_DIR/hooks" ]; then
-  LINK_TARGET=$(readlink "$CLAUDE_DIR/hooks")
+  LINK_TARGET=$(resolve_link "$CLAUDE_DIR/hooks")
   rm "$CLAUDE_DIR/hooks"
   mkdir -p "$CLAUDE_DIR/hooks"
   # Copy non-retrospective hooks
@@ -109,8 +137,14 @@ if [ -d "$VAULT_BASE" ]; then
     echo "  Symlinked: sessions -> repo/data/sessions"
     # Move backed up files into repo if any
     if [ "$(ls -A "$BACKUP" 2>/dev/null)" ]; then
-      cp -n "$BACKUP"/*.md "$REPO_ROOT/data/sessions/" 2>/dev/null || true
-      cp -rn "$BACKUP"/reviews/ "$REPO_ROOT/data/" 2>/dev/null || true
+      for f in "$BACKUP"/*.md; do
+        [ -f "$f" ] || continue
+        DEST="$REPO_ROOT/data/sessions/$(basename "$f")"
+        [ -f "$DEST" ] || cp "$f" "$DEST"
+      done
+      if [ -d "$BACKUP/reviews" ]; then
+        cp -R "$BACKUP/reviews/"* "$REPO_ROOT/data/" 2>/dev/null || true
+      fi
       echo "  Migrated existing session files to repo"
     fi
   elif [ -L "$VAULT_SESSIONS_DIR" ]; then
@@ -157,7 +191,7 @@ echo "[7/7] Cron setup..."
 CRON_MARKER="# === dev-retrospective cron ==="
 EXISTING_CRON=$(crontab -l 2>/dev/null || true)
 
-if echo "$EXISTING_CRON" | grep -q "dev-retrospective"; then
+if echo "$EXISTING_CRON" | grep -q "\.dev-retrospective.*git pull"; then
   echo "  Cron entries already exist, skipping"
 else
   # Remove old vault-based cron entries
