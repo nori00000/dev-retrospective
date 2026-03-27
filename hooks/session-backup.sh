@@ -17,8 +17,9 @@ timestamp=$(date +%Y%m%d_%H%M%S)
 
 # Backup transcript if available
 if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
-    # Get last 100 lines as summary (recent conversation)
-    tail -100 "$transcript_path" > "$BACKUP_DIR/session_${timestamp}_${reason}.jsonl" 2>/dev/null
+    # Save full transcript (needed for AI auto-log)
+    cp "$transcript_path" "$BACKUP_DIR/session_${timestamp}_${reason}.jsonl" 2>/dev/null
+    FULL_TRANSCRIPT="$BACKUP_DIR/session_${timestamp}_${reason}.jsonl"
 fi
 
 # Save current working directory info
@@ -113,6 +114,14 @@ git_branch: ${GIT_BRANCH}
 
 - [ ] \`/session-log\` 명령으로 상세 로그 생성
 HEREDOC
+fi
+
+# === AI Auto-Log (background) ===
+# skeleton은 즉시 생성되고, auto-log가 성공하면 skeleton을 대체
+AUTO_LOG_SCRIPT="$HOME/.claude/hooks/session-auto-log.sh"
+if [ -x "$AUTO_LOG_SCRIPT" ] && [ -n "${FULL_TRANSCRIPT:-}" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  nohup bash "$AUTO_LOG_SCRIPT" "$FULL_TRANSCRIPT" "$reason" "$CURRENT_DIR" \
+    >> "$BACKUP_DIR/auto-log.log" 2>&1 &
 fi
 
 # === unpushed work 경고 ===

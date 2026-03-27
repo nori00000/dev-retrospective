@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-03-26T23:20:16Z",
+  "timestamp": "2026-03-27T00:21:47Z",
   "machine": "m1-pro",
   "reason": "other",
-  "cwd": "/Users/leesangmin/projects/thinkingos",
-  "project": "thinkingos",
+  "cwd": "/Users/leesangmin/projects/dev-retrospective/data/sessions",
+  "project": "sessions",
   "git_branch": "main",
-  "unpushed_commits": 0,
-  "dirty_files": 0,
+  "unpushed_commits": 2,
+  "dirty_files": 6,
   "has_upstream": true
 }
