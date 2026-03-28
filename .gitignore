@@ -10,18 +10,14 @@
 # Local config
 .env
 .env.local
-.vault-path
-
-# OMC state
-.omc/
-
-# Editor
-.vscode/
-.idea/
 
 # Claude Code / OMC
 .omc/
 .vault-path
+
+# Editor
+.vscode/
+.idea/
 
 # Node (if ever needed)
 node_modules/
