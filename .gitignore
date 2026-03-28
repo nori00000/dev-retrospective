@@ -19,5 +19,9 @@
 .vscode/
 .idea/
 
+# Claude Code / OMC
+.omc/
+.vault-path
+
 # Node (if ever needed)
 node_modules/

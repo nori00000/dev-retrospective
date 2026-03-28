@@ -119,8 +119,15 @@ fi
 # === AI Auto-Log (background) ===
 # skeleton은 즉시 생성되고, auto-log가 성공하면 skeleton을 대체
 AUTO_LOG_SCRIPT="$HOME/.claude/hooks/session-auto-log.sh"
+# API 키: 현재 환경에 없으면 .zshenv/.zshrc에서 로드 시도
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  [ -f "$HOME/.zshenv" ] && source "$HOME/.zshenv" 2>/dev/null
+  [ -f "$HOME/.zshrc" ] && grep -q "ANTHROPIC_API_KEY" "$HOME/.zshrc" 2>/dev/null && \
+    eval "$(grep 'export ANTHROPIC_API_KEY' "$HOME/.zshrc" | head -1)"
+fi
 if [ -x "$AUTO_LOG_SCRIPT" ] && [ -n "${FULL_TRANSCRIPT:-}" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-  nohup bash "$AUTO_LOG_SCRIPT" "$FULL_TRANSCRIPT" "$reason" "$CURRENT_DIR" \
+  ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+    nohup bash "$AUTO_LOG_SCRIPT" "$FULL_TRANSCRIPT" "$reason" "$CURRENT_DIR" \
     >> "$BACKUP_DIR/auto-log.log" 2>&1 &
 fi
 
