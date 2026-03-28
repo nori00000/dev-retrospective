@@ -10,6 +10,10 @@
 # Local config
 .env
 .env.local
+.vault-path
+
+# OMC state
+.omc/
 
 # Editor
 .vscode/
