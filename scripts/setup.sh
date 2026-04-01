@@ -200,6 +200,8 @@ done
 echo "[7/8] Cron setup..."
 CRON_MARKER="# === dev-retrospective cron ==="
 EXISTING_CRON=$(crontab -l 2>/dev/null || true)
+OFFSET=0
+VAULT_OFFSET=0
 
 if echo "$EXISTING_CRON" | grep -q "$CRON_MARKER"; then
   echo "  Cron entries already exist, skipping"
