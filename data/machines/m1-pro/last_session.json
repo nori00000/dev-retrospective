@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-04-01T02:09:07Z",
+  "timestamp": "2026-04-01T05:24:01Z",
   "machine": "m1-pro",
-  "reason": "other",
-  "cwd": "/Users/leesangmin/projects/thinkingos",
-  "project": "thinkingos",
-  "git_branch": "main",
+  "reason": "resume",
+  "cwd": "/Users/leesangmin",
+  "project": "leesangmin",
+  "git_branch": "none",
   "unpushed_commits": 0,
-  "dirty_files": 1,
-  "has_upstream": true
+  "dirty_files": 0,
+  "has_upstream": false
 }
