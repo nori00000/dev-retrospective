@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-04-01T12:08:25Z",
-  "machine": "m1-pro",
-  "reason": "other",
+  "timestamp": "2026-04-01T03:00:40Z",
+  "machine": "m4-studio",
+  "reason": "setup",
   "cwd": "/Users/leesangmin",
-  "project": "leesangmin",
+  "project": "none",
   "git_branch": "none",
   "unpushed_commits": 0,
   "dirty_files": 0,
