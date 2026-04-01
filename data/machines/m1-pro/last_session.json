@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-04-01T05:24:01Z",
+  "timestamp": "2026-04-01T06:55:14Z",
   "machine": "m1-pro",
-  "reason": "resume",
-  "cwd": "/Users/leesangmin",
-  "project": "leesangmin",
-  "git_branch": "none",
-  "unpushed_commits": 0,
+  "reason": "clear",
+  "cwd": "/Users/leesangmin/projects/ucp-samples",
+  "project": "ucp-samples",
+  "git_branch": "main",
+  "unpushed_commits": 1,
   "dirty_files": 0,
-  "has_upstream": false
+  "has_upstream": true
 }
