@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-01T02:33:30Z",
+  "timestamp": "2026-04-01T11:57:41Z",
   "machine": "m4-air",
-  "reason": "other",
+  "reason": "logout",
   "cwd": "/Users/leesangmin",
   "project": "leesangmin",
   "git_branch": "none",
