@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-04-01T12:08:25Z",
+  "timestamp": "2026-04-01T13:30:23Z",
   "machine": "m1-pro",
   "reason": "other",
-  "cwd": "/Users/leesangmin",
-  "project": "leesangmin",
-  "git_branch": "none",
+  "cwd": "/Users/leesangmin/.dev-retrospective",
+  "project": ".dev-retrospective",
+  "git_branch": "main",
   "unpushed_commits": 0,
-  "dirty_files": 0,
-  "has_upstream": false
+  "dirty_files": 5,
+  "has_upstream": true
 }
