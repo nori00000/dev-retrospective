@@ -1,0 +1,13 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "bindings": [
+    {
+      "context": "Chat",
+      "bindings": {
+        "ctrl+shift+m": "chat:modelPicker",
+        "ctrl+shift+M": "chat:modelPicker",
+        "ctrl+shift+ㅡ": "chat:modelPicker"
+      }
+    }
+  ]
+}
