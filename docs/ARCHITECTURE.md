@@ -28,7 +28,7 @@ GitHub Actions가 생성한 raw stats를 Claude CLI로 분석합니다.
 ~/.claude/commands/          (실제 디렉토리)
 ├── session-log.md → ~/.dev-retrospective/commands/session-log.md  (심링크)
 ├── dev-daily.md   → ~/.dev-retrospective/commands/dev-daily.md    (심링크)
-├── ...            (회고 커맨드 9개: 리포에서 심링크)
+├── ...            (회고 커맨드 10개: 리포에서 심링크)
 ├── commit.md      (직접 파일, 범용 커맨드)
 └── explain.md     (직접 파일, 범용 커맨드)
 ```

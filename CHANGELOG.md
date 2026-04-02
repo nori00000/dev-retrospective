@@ -3,7 +3,7 @@
 ## [1.0.0] - 2026-03-26
 
 ### Added
-- 9개 Claude Code 슬래시 커맨드 마이그레이션
+- 10개 Claude Code 슬래시 커맨드 마이그레이션
 - GitHub Actions 워크플로우 (daily/weekly/monthly stats + sync notify)
 - 로컬 AI 보강 스크립트 (sync-and-enrich.sh)
 - 멀티머신 setup.sh (파일별 심링크 방식)

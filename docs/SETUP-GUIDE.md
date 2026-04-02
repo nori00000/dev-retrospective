@@ -19,7 +19,7 @@ bash ~/.dev-retrospective/scripts/setup.sh
 
 setup.sh가 자동으로:
 1. ~/.claude/commands/ 디렉토리 확인/생성
-2. 회고 커맨드 9개 파일별 심링크 생성
+2. 회고 커맨드 10개 파일별 심링크 생성
 3. hooks 파일별 심링크 생성
 4. Obsidian sessions 심링크 (vault 있을 때만)
 5. 크론잡 등록
@@ -29,7 +29,7 @@ setup.sh가 자동으로:
 ### 심링크 수동 생성
 ```bash
 # 커맨드
-for cmd in session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult dev-radar dev-inbox dev-setup; do
+for cmd in session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult dev-radar dev-inbox dev-setup dev-where; do
   ln -sf ~/.dev-retrospective/commands/${cmd}.md ~/.claude/commands/${cmd}.md
 done
 
@@ -43,9 +43,11 @@ done
 ```bash
 crontab -e
 # 아래 내용 추가:
-*/30 * * * * cd ~/.dev-retrospective && git pull --ff-only >> ~/.claude/logs/git-sync.log 2>&1
-0 * * * * cd ~/.dev-retrospective && git add -A data/ && git diff --cached --quiet || (git commit -m "auto: sync from $(hostname -s)" && git push) >> ~/.claude/logs/git-push.log 2>&1
+*/30 * * * * cd ~/.dev-retrospective && git pull --rebase --quiet >> ~/.claude/logs/git-sync.log 2>&1
+0 * * * * cd ~/.dev-retrospective && git pull --rebase --quiet && git add -A data/ && git diff --cached --quiet || (git commit -m "auto: sync from $(hostname -s)" && git push) >> ~/.claude/logs/git-push.log 2>&1
 30 22 * * * bash ~/.dev-retrospective/scripts/sync-and-enrich.sh >> ~/.claude/logs/enrich.log 2>&1
+# Vault sync (hostname 기반 오프셋으로 머신간 충돌 방지)
+{VAULT_OFFSET} * * * * bash ~/.dev-retrospective/scripts/sync-to-vault.sh >> ~/.claude/logs/vault-sync.log 2>&1
 ```
 
 ## 업데이트
