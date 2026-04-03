@@ -23,13 +23,14 @@ if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
 fi
 
 # Save current working directory info
-echo "{
-  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-  \"reason\": \"$reason\",
-  \"cwd\": \"$(pwd)\",
-  \"git_branch\": \"$(git branch --show-current 2>/dev/null || echo 'none')\",
-  \"transcript_backup\": \"session_${timestamp}_${reason}.jsonl\"
-}" > "$BACKUP_DIR/last_session.json"
+jq -n \
+  --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg reason "$reason" \
+  --arg cwd "$(pwd)" \
+  --arg branch "$(git branch --show-current 2>/dev/null || echo 'none')" \
+  --arg backup "session_${timestamp}_${reason}.jsonl" \
+  '{timestamp: $ts, reason: $reason, cwd: $cwd, git_branch: $branch, transcript_backup: $backup}' \
+  > "$BACKUP_DIR/last_session.json"
 
 # --- Obsidian Session Skeleton ---
 # 안전망: AI 분석 로그가 없을 때 스켈레톤 노트 자동 생성
@@ -122,8 +123,10 @@ AUTO_LOG_SCRIPT="$HOME/.claude/hooks/session-auto-log.sh"
 # API 키: 현재 환경에 없으면 .zshenv/.zshrc에서 로드 시도
 if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
   [ -f "$HOME/.zshenv" ] && source "$HOME/.zshenv" 2>/dev/null
-  [ -f "$HOME/.zshrc" ] && grep -q "ANTHROPIC_API_KEY" "$HOME/.zshrc" 2>/dev/null && \
-    eval "$(grep 'export ANTHROPIC_API_KEY' "$HOME/.zshrc" | head -1)"
+  if [ -f "$HOME/.zshrc" ]; then
+    ANTHROPIC_API_KEY=$(grep 'ANTHROPIC_API_KEY=' "$HOME/.zshrc" | head -1 | sed "s/.*ANTHROPIC_API_KEY=['\"]*//" | sed "s/['\"].*//")
+    export ANTHROPIC_API_KEY
+  fi
 fi
 if [ -x "$AUTO_LOG_SCRIPT" ] && [ -n "${FULL_TRANSCRIPT:-}" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
@@ -158,22 +161,27 @@ fi
 MACHINE_DIR="$HOME/.dev-retrospective/data/machines/$MACHINE"
 mkdir -p "$MACHINE_DIR"
 
-cat > "$MACHINE_DIR/last_session.json" << EOMACHINE
-{
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "machine": "$MACHINE",
-  "reason": "$reason",
-  "cwd": "$(pwd)",
-  "project": "$(basename "$(pwd)")",
-  "git_branch": "$(git branch --show-current 2>/dev/null || echo "none")",
-  "unpushed_commits": ${UNPUSHED:-0},
-  "dirty_files": ${DIRTY:-0},
-  "has_upstream": $([ -n "$HAS_UPSTREAM" ] && echo "true" || echo "false")
-}
-EOMACHINE
+jq -n \
+  --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg machine "$MACHINE" \
+  --arg reason "$reason" \
+  --arg cwd "$(pwd)" \
+  --arg project "$(basename "$(pwd)")" \
+  --arg branch "$(git branch --show-current 2>/dev/null || echo "none")" \
+  --argjson unpushed "${UNPUSHED:-0}" \
+  --argjson dirty "${DIRTY:-0}" \
+  --argjson has_upstream "$([ -n "$HAS_UPSTREAM" ] && echo "true" || echo "false")" \
+  '{timestamp: $ts, machine: $machine, reason: $reason, cwd: $cwd, project: $project, git_branch: $branch, unpushed_commits: $unpushed, dirty_files: $dirty, has_upstream: $has_upstream}' \
+  > "$MACHINE_DIR/last_session.json"
+
+# === Homelab: handoff → task 자동 변환 ===
+ORCH_REPO="$HOME/projects/homelab-orchestration"
+TASK_SYNC="$ORCH_REPO/bin/task-sync.sh"
+if [ -x "$TASK_SYNC" ]; then
+  bash "$TASK_SYNC" 2>/dev/null || true
+fi
 
 # === Homelab Orchestration 태스크 자동 동기화 ===
-ORCH_REPO="$HOME/projects/homelab-orchestration"
 if [ -d "$ORCH_REPO/.git" ]; then
   cd "$ORCH_REPO"
 
@@ -184,7 +192,10 @@ if [ -d "$ORCH_REPO/.git" ]; then
     MACHINE=$(hostname -s | tr '[:upper:]' '[:lower:]')
     git add tasks/ handoffs/ 2>/dev/null
     git commit -m "auto-sync: ${MACHINE} 세션 종료 시 태스크/핸드오프 동기화" --quiet 2>/dev/null
-    git push origin main --quiet 2>/dev/null
+    git pull --rebase origin main --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || {
+      echo "[homelab-sync] push 실패 — 다음 세션에서 재시도" >&2
+    }
   fi
 
   cd - > /dev/null 2>&1

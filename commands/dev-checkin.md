@@ -126,6 +126,40 @@ done
 - push 안 된 커밋이 있는 프로젝트
 - remote가 설정되지 않은 프로젝트 (⚠️ 경고)
 
+#### 2.8 머신별 태스크 체크리스트 (homelab-orchestration)
+
+```bash
+ORCH_REPO="$HOME/projects/homelab-orchestration"
+CURRENT_MACHINE=$(hostname -s | tr '[:upper:]' '[:lower:]')
+
+# homelab-orchestration이 있으면 git pull 후 태스크 로드
+if [ -d "$ORCH_REPO/.git" ]; then
+  cd "$ORCH_REPO" && git pull --quiet origin main 2>/dev/null
+  
+  # 이 머신의 태스크 파일 찾기
+  TASK_FILE=""
+  case "$CURRENT_MACHINE" in
+    *m4-studio*|*mac-studio*) TASK_FILE="tasks/m4-studio.md" ;;
+    *m4-air*|*macbook-air*)   TASK_FILE="tasks/m4-air.md" ;;
+    *m1-pro*|*macbook-pro*)   TASK_FILE="tasks/m1-pro.md" ;;
+  esac
+  
+  if [ -n "$TASK_FILE" ] && [ -f "$ORCH_REPO/$TASK_FILE" ]; then
+    cat "$ORCH_REPO/$TASK_FILE"
+  fi
+  
+  # 최신 핸드오프 확인
+  LATEST_HANDOFF=$(ls -t "$ORCH_REPO"/handoffs/*.md 2>/dev/null | head -1)
+  if [ -n "$LATEST_HANDOFF" ]; then
+    cat "$LATEST_HANDOFF"
+  fi
+fi
+```
+
+이 머신에 할당된 체크리스트와 최신 핸드오프를 로드.
+tasks/*.md에서 `- [ ]` 미완료 항목 수 집계.
+최신 핸드오프에서 이 머신 관련 컨텍스트 추출.
+
 ### 3. 미완료 작업 집계
 
 모든 세션 로그와 일간 회고에서 `- [ ]` 패턴의 미완료 TODO를 수집합니다.
@@ -164,6 +198,17 @@ if [ -f "$GIT_ROOT/.claude/CLAUDE.md" ]; then cat "$GIT_ROOT/.claude/CLAUDE.md";
 
 ### 동기화 결과
 - `git pull --rebase`: {성공/실패/해당없음}
+
+### 이 머신 태스크 ({N}개 미완료)
+(tasks/{machine}.md에서 미완료 체크리스트 표시)
+- [ ] {태스크1}
+- [ ] {태스크2}
+없으면 "✅ 할당된 태스크 없음" 또는 "homelab-orchestration 미설치" 표시
+
+### 최신 핸드오프
+- **출처**: {핸드오프 파일명}
+- **이 머신 관련**: {해당 머신 섹션 요약}
+없으면 "핸드오프 없음" 표시
 
 ### 미완료 백로그 ({N}개)
 1. {TODO1}
