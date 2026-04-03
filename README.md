@@ -5,10 +5,11 @@
 ## 구조
 
 ```
-retrospectives/     # 연/월별 회고 문서
+retrospectives/     # 수동 작성 회고 (연/월별)
   2026/03/          # YYYY-MM-DD-주제.md 형식
+data/sessions/      # 자동 세션 로그 (Claude Code 생성)
+data/reviews/       # AI 보강 리뷰 (daily/weekly/monthly)
 templates/          # 회고 작성 템플릿
-tests/              # 레거시 테스트 기록
 ```
 
 ## 작성 규칙

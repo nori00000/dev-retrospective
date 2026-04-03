@@ -34,7 +34,7 @@ for cmd in session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult 
 done
 
 # 훅
-for hook in session-backup.sh session-restore.sh; do
+for hook in session-backup.sh session-restore.sh cmds-pre-check.sh cmds-post-validate.sh; do
   ln -sf ~/.dev-retrospective/hooks/${hook} ~/.claude/hooks/${hook}
 done
 ```

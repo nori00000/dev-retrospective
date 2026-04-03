@@ -71,7 +71,7 @@ fi
 
 # 2. Create file-level symlinks for retrospective commands
 echo "[2/8] Linking retrospective commands..."
-RETRO_CMDS="session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult dev-radar dev-inbox dev-setup"
+RETRO_CMDS="session-log dev-daily dev-weekly dev-monthly dev-checkin dev-consult dev-radar dev-inbox dev-setup dev-where"
 for cmd in $RETRO_CMDS; do
   SRC="$REPO_ROOT/commands/${cmd}.md"
   DST="$CLAUDE_DIR/commands/${cmd}.md"
