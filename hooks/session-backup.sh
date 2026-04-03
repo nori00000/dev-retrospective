@@ -190,7 +190,10 @@ if [ -d "$ORCH_REPO/.git" ]; then
     MACHINE=$(hostname -s | tr '[:upper:]' '[:lower:]')
     git add tasks/ handoffs/ 2>/dev/null
     git commit -m "auto-sync: ${MACHINE} 세션 종료 시 태스크/핸드오프 동기화" --quiet 2>/dev/null
-    git push origin main --quiet 2>/dev/null
+    git pull --rebase origin main --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || {
+      echo "[homelab-sync] push 실패 — 다음 세션에서 재시도" >&2
+    }
   fi
 
   cd - > /dev/null 2>&1
