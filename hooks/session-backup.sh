@@ -172,8 +172,14 @@ cat > "$MACHINE_DIR/last_session.json" << EOMACHINE
 }
 EOMACHINE
 
-# === Homelab Orchestration 태스크 자동 동기화 ===
+# === Homelab: handoff → task 자동 변환 ===
 ORCH_REPO="$HOME/projects/homelab-orchestration"
+TASK_SYNC="$ORCH_REPO/bin/task-sync.sh"
+if [ -x "$TASK_SYNC" ]; then
+  bash "$TASK_SYNC" 2>/dev/null || true
+fi
+
+# === Homelab Orchestration 태스크 자동 동기화 ===
 if [ -d "$ORCH_REPO/.git" ]; then
   cd "$ORCH_REPO"
 
