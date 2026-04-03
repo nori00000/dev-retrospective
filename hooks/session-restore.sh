@@ -15,9 +15,9 @@ if [ -f "$LAST_SESSION" ]; then
         last_branch=$(jq -r '.git_branch // ""' "$LAST_SESSION")
         last_time=$(jq -r '.timestamp // ""' "$LAST_SESSION")
 
-        echo "export LAST_SESSION_CWD='$last_cwd'" >> "$CLAUDE_ENV_FILE"
-        echo "export LAST_SESSION_BRANCH='$last_branch'" >> "$CLAUDE_ENV_FILE"
-        echo "export LAST_SESSION_TIME='$last_time'" >> "$CLAUDE_ENV_FILE"
+        printf "export LAST_SESSION_CWD='%s'\n" "${last_cwd//\'/\'\\\'\'}" >> "$CLAUDE_ENV_FILE"
+        printf "export LAST_SESSION_BRANCH='%s'\n" "${last_branch//\'/\'\\\'\'}" >> "$CLAUDE_ENV_FILE"
+        printf "export LAST_SESSION_TIME='%s'\n" "${last_time//\'/\'\\\'\'}" >> "$CLAUDE_ENV_FILE"
     fi
 fi
 
@@ -31,11 +31,9 @@ if [ -d "$MACHINES_DIR" ] && [ -n "$CLAUDE_ENV_FILE" ]; then
     [ "$mname" = "$CURRENT_MACHINE" ] && continue
     mfile="$mdir/last_session.json"
     [ -f "$mfile" ] || continue
-    read m_project m_time m_unpushed <<< $(python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(d.get('project','?'), d.get('timestamp','?'), d.get('unpushed_commits',0))
-" < "$mfile" 2>/dev/null)
+    m_project=$(jq -r '.project // "?"' "$mfile" 2>/dev/null)
+    m_time=$(jq -r '.timestamp // "?"' "$mfile" 2>/dev/null)
+    m_unpushed=$(jq -r '.unpushed_commits // 0' "$mfile" 2>/dev/null)
     OTHER_SESSIONS="${OTHER_SESSIONS}${mname}:${m_project}:${m_time}:${m_unpushed};"
   done
   echo "export OTHER_MACHINE_SESSIONS=\"$OTHER_SESSIONS\"" >> "$CLAUDE_ENV_FILE"
@@ -49,13 +47,18 @@ if [ -d "$ORCH_REPO/.git" ]; then
   # 조용히 최신 pull
   cd "$ORCH_REPO" && git pull --quiet --rebase origin main 2>/dev/null
 
-  # 이 머신의 태스크 파일 찾기
-  TASK_FILE=""
-  case "$MACHINE" in
-    *m4-studio*|*mac-studio*) TASK_FILE="tasks/m4-studio.md" ;;
-    *m4-air*|*macbook-air*)   TASK_FILE="tasks/m4-air.md" ;;
-    *m1-pro*|*macbook-pro*)   TASK_FILE="tasks/m1-pro.md" ;;
-  esac
+  # 이 머신의 태스크 파일 찾기 (task-common.sh 사용)
+  if [ -f "$ORCH_REPO/bin/task-common.sh" ]; then
+    source "$ORCH_REPO/bin/task-common.sh"
+    TASK_FILE=$(resolve_task_file "$MACHINE")
+  else
+    TASK_FILE=""
+    case "$MACHINE" in
+      *m4-studio*|*mac-studio*) TASK_FILE="tasks/m4-studio.md" ;;
+      *m4-air*|*macbook-air*)   TASK_FILE="tasks/m4-air.md" ;;
+      *m1-pro*|*macbook-pro*)   TASK_FILE="tasks/m1-pro.md" ;;
+    esac
+  fi
 
   # 미완료 태스크 수집
   PENDING=""
