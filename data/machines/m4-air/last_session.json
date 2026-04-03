@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-04-02T08:04:00Z",
+  "timestamp": "2026-04-03T03:42:45Z",
   "machine": "m4-air",
   "reason": "other",
-  "cwd": "/Users/leesangmin",
-  "project": "leesangmin",
-  "git_branch": "none",
+  "cwd": "/Users/leesangmin/projects/homelab-orchestration",
+  "project": "homelab-orchestration",
+  "git_branch": "main",
   "unpushed_commits": 0,
-  "dirty_files": 0,
-  "has_upstream": false
+  "dirty_files": 2,
+  "has_upstream": true
 }

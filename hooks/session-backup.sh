@@ -172,4 +172,22 @@ cat > "$MACHINE_DIR/last_session.json" << EOMACHINE
 }
 EOMACHINE
 
+# === Homelab Orchestration 태스크 자동 동기화 ===
+ORCH_REPO="$HOME/projects/homelab-orchestration"
+if [ -d "$ORCH_REPO/.git" ]; then
+  cd "$ORCH_REPO"
+
+  # tasks/ 또는 handoffs/ 에 변경사항이 있으면 자동 commit+push
+  TASK_CHANGES=$(git status --porcelain tasks/ handoffs/ 2>/dev/null | wc -l | tr -d ' ')
+
+  if [ "$TASK_CHANGES" -gt 0 ]; then
+    MACHINE=$(hostname -s | tr '[:upper:]' '[:lower:]')
+    git add tasks/ handoffs/ 2>/dev/null
+    git commit -m "auto-sync: ${MACHINE} 세션 종료 시 태스크/핸드오프 동기화" --quiet 2>/dev/null
+    git push origin main --quiet 2>/dev/null
+  fi
+
+  cd - > /dev/null 2>&1
+fi
+
 exit 0
